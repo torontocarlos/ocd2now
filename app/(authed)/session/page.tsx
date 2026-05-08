@@ -5,7 +5,7 @@ import { SessionPlayer } from "./SessionPlayer";
 export const dynamic = "force-dynamic";
 
 type Props = {
-  searchParams: { s?: string; i?: string };
+  searchParams: { s?: string; f?: string };
 };
 
 export default async function SessionPage({ searchParams }: Props) {
@@ -14,16 +14,16 @@ export default async function SessionPage({ searchParams }: Props) {
   if (!me.ocdUser.onboarded_at) redirect("/welcome");
 
   const sessionId = searchParams.s;
-  const invitationId = searchParams.i ? parseInt(searchParams.i, 10) : NaN;
+  const fragmentId = searchParams.f ? parseInt(searchParams.f, 10) : NaN;
 
-  if (!sessionId || !Number.isFinite(invitationId)) {
+  if (!sessionId || !Number.isFinite(fragmentId)) {
     redirect("/now");
   }
 
   return (
     <SessionPlayer
       sessionId={sessionId}
-      invitationId={invitationId}
+      fragmentId={fragmentId}
       userType={me.ocdUser.user_type}
     />
   );
