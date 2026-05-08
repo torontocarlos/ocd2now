@@ -3,13 +3,13 @@
 import { revalidatePath } from "next/cache";
 import { createClient } from "@/lib/supabase/server";
 import { getCurrentUser } from "@/lib/auth/getCurrentUser";
-import { selectInvitation } from "@/lib/invitations";
+import { selectFragment } from "@/lib/fragments-select";
 import { dailySessionCount } from "@/lib/frequency";
 import type { ActionResult } from "./_result";
 
 export type StartSessionData = {
   session_id: string;
-  invitation_id: number;
+  fragment_id: number;
   daily_count_at_start: number;
 };
 
@@ -36,20 +36,23 @@ export async function startSession(): Promise<ActionResult<StartSessionData>> {
       ok: true,
       data: {
         session_id: open.id,
-        invitation_id: open.invitation_id,
+        fragment_id: open.invitation_id,
         daily_count_at_start: open.daily_session_count_at_start ?? 0,
       },
     };
   }
 
   const dailyCount = await dailySessionCount(me.authId);
-  const invitationId = await selectInvitation(me.authId);
+  const fragment = await selectFragment(me.authId);
 
+  // The DB column is named `invitation_id` for historical reasons; it now
+  // stores any fragment id (1–8 = invitations, 100+ = code-only fragments).
+  // No FK constraint, so non-invitation ids are fine.
   const { data: inserted, error } = await supabase
     .from("ocd_sessions")
     .insert({
       user_id: me.authId,
-      invitation_id: invitationId,
+      invitation_id: fragment.id,
       daily_session_count_at_start: dailyCount,
     })
     .select("id")
@@ -61,7 +64,7 @@ export async function startSession(): Promise<ActionResult<StartSessionData>> {
 
   await supabase
     .from("ocd_users")
-    .update({ last_invitation_id: invitationId })
+    .update({ last_invitation_id: fragment.id })
     .eq("id", me.authId);
 
   revalidatePath("/now");
@@ -70,7 +73,7 @@ export async function startSession(): Promise<ActionResult<StartSessionData>> {
     ok: true,
     data: {
       session_id: inserted.id,
-      invitation_id: invitationId,
+      fragment_id: fragment.id,
       daily_count_at_start: dailyCount,
     },
   };

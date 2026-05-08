@@ -19,7 +19,7 @@ export function BeginButton({ label = "Begin" }: { label?: string }) {
       }
       const params = new URLSearchParams({
         s: result.data!.session_id,
-        i: String(result.data!.invitation_id),
+        f: String(result.data!.fragment_id),
       });
       router.push(`/session?${params.toString()}`);
     });
