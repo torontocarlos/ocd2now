@@ -41,10 +41,28 @@ export async function updateSession(request: NextRequest) {
     (p) => path === p || path.startsWith(`${p}/`),
   );
 
-  if (isAuthedPath && !user) {
+  // Redirect helper. Two responsibilities:
+  //   1. Don't redirect to the path we're already on (defends against any
+  //      future redirect-target drift causing a self-loop).
+  //   2. Copy the auth cookies that `setAll` wrote onto `response` so they
+  //      survive the redirect. Without this, supabase-ssr's refreshed
+  //      session is dropped on every redirect and the browser oscillates
+  //      between paths — that was the ERR_TOO_MANY_REDIRECTS we hit on
+  //      /welcome after Google sign-in.
+  function redirectTo(toPath: string) {
+    if (path === toPath) return response;
     const url = request.nextUrl.clone();
-    url.pathname = "/";
-    return NextResponse.redirect(url);
+    url.pathname = toPath;
+    url.search = "";
+    const redirectResponse = NextResponse.redirect(url);
+    response.cookies.getAll().forEach((c) => {
+      redirectResponse.cookies.set(c);
+    });
+    return redirectResponse;
+  }
+
+  if (isAuthedPath && !user) {
+    return redirectTo("/");
   }
 
   if (path === "/" && user) {
@@ -54,9 +72,7 @@ export async function updateSession(request: NextRequest) {
       .eq("id", user.id)
       .maybeSingle();
 
-    const url = request.nextUrl.clone();
-    url.pathname = ocdUser?.onboarded_at ? "/now" : "/welcome";
-    return NextResponse.redirect(url);
+    return redirectTo(ocdUser?.onboarded_at ? "/now" : "/welcome");
   }
 
   return response;
