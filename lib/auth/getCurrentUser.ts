@@ -13,11 +13,23 @@ export async function getCurrentUser(): Promise<{
 
   if (!user) return null;
 
-  const { data: ocdUser } = await supabase
+  let { data: ocdUser } = await supabase
     .from("ocd_users")
     .select("*")
     .eq("id", user.id)
     .maybeSingle();
+
+  // The auth.users INSERT trigger usually creates this row. If it didn't
+  // (or hasn't propagated yet on a fresh sign-in), bootstrap it ourselves
+  // under the user's RLS so the UI doesn't bounce between / and /welcome.
+  if (!ocdUser) {
+    const { data: inserted } = await supabase
+      .from("ocd_users")
+      .insert({ id: user.id, email: user.email ?? "" })
+      .select("*")
+      .maybeSingle();
+    ocdUser = inserted ?? null;
+  }
 
   if (!ocdUser) return null;
 
