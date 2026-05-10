@@ -22,7 +22,7 @@ export function ThreeSounds({ userType }: InvitationProps) {
     <AnimatePresence mode="wait">
       {phase === "prompt" ? (
         <FadeLine key="prompt">
-          Three sounds in the room you didn&rsquo;t notice.
+          Sounds you didn&rsquo;t notice are happening in the room.
         </FadeLine>
       ) : (
         <FinalText key="final">{finalText}</FinalText>

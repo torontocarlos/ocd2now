@@ -16,7 +16,11 @@
 // db/migrations/0001_ocd2now_schema.sql). 100+ are code-only fragments.
 // `ocd_sessions.invitation_id` has no FK so writing 101+ is fine.
 
-export type FragmentKind = "invitation" | "still-text";
+export type FragmentKind =
+  | "invitation"
+  | "still-text"
+  | "silence"
+  | "redirect-out";
 
 export type InvitationFragment = {
   id: number;
@@ -40,7 +44,38 @@ export type StillTextFragment = {
   textOcd?: string;
 };
 
-export type Fragment = InvitationFragment | StillTextFragment;
+// A silence fragment is paper background and time. No prompt, no
+// instruction, no closing line of its own — the standard return phase
+// in SessionPlayer provides the closing frame ("Enough for now.").
+// For the spirals where even a still-text is too much.
+export type SilenceFragment = {
+  id: number;
+  slug: string;
+  kind: "silence";
+  durationMs: number;
+};
+
+// A redirect-out fragment is the app gently sending the user out.
+// Sometimes the right answer is "not the app." Skips the arrival and
+// return phases — the line *is* the experience. SessionPlayer special-
+// cases this kind so the user sees only the redirect text and then the
+// session ends.
+export type RedirectOutFragment = {
+  id: number;
+  slug: string;
+  kind: "redirect-out";
+  // Total time the line is on screen (from first fade-in to /end). Short
+  // by design — this isn't a held experience, it's a redirect.
+  durationMs: number;
+  textDefault: string;
+  textOcd?: string;
+};
+
+export type Fragment =
+  | InvitationFragment
+  | StillTextFragment
+  | SilenceFragment
+  | RedirectOutFragment;
 
 // Invitation fragments — these mirror db/migrations/0001 exactly. If you
 // change either side, change both. (playbook §9)
@@ -96,9 +131,34 @@ const STILL_TEXT_FRAGMENTS: StillTextFragment[] = [
   },
 ];
 
+// Silence fragments — paper bg, no instruction, no exercise, no text.
+// The standard return phase ("Enough for now.") provides the closing.
+const SILENCE_FRAGMENTS: SilenceFragment[] = [
+  { id: 201, slug: "silence-short", kind: "silence", durationMs: 35_000 },
+  { id: 202, slug: "silence-long", kind: "silence", durationMs: 50_000 },
+];
+
+// Redirect-out fragments — the app sending the user out. Skip arrival
+// and return phases (handled in SessionPlayer). The line *is* the
+// session. Use sparingly — for the user in real distress this can read
+// as rejection if the wording isn't right. One seed for v1; Carlos can
+// add more.
+const REDIRECT_OUT_FRAGMENTS: RedirectOutFragment[] = [
+  {
+    id: 301,
+    slug: "redirect-outside",
+    kind: "redirect-out",
+    durationMs: 10_000,
+    textDefault:
+      "Not now. Step outside if you can. Or close this and stop reading.",
+  },
+];
+
 const ALL_FRAGMENTS: Fragment[] = [
   ...INVITATION_FRAGMENTS,
   ...STILL_TEXT_FRAGMENTS,
+  ...SILENCE_FRAGMENTS,
+  ...REDIRECT_OUT_FRAGMENTS,
 ];
 
 export function getFragment(id: number): Fragment | null {
