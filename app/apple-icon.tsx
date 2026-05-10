@@ -1,4 +1,6 @@
 import { ImageResponse } from "next/og";
+import { readFile } from "node:fs/promises";
+import { join } from "node:path";
 
 // Apple home-screen icon. iOS uses this when a user adds the PWA to
 // their home screen and also (via apple-touch-icon link) when iMessage
@@ -7,7 +9,14 @@ import { ImageResponse } from "next/og";
 export const size = { width: 180, height: 180 };
 export const contentType = "image/png";
 
-export default function AppleIcon() {
+async function loadCormorantItalic() {
+  const path = join(process.cwd(), "app", "fonts", "CormorantGaramond-Italic.ttf");
+  return readFile(path);
+}
+
+export default async function AppleIcon() {
+  const cormorant = await loadCormorantItalic();
+
   return new ImageResponse(
     (
       <div
@@ -18,7 +27,7 @@ export default function AppleIcon() {
           display: "flex",
           alignItems: "center",
           justifyContent: "center",
-          fontFamily: "Georgia, serif",
+          fontFamily: "Cormorant",
           fontStyle: "italic",
           fontSize: 130,
           color: "#1A1815",
@@ -30,6 +39,16 @@ export default function AppleIcon() {
         n
       </div>
     ),
-    size,
+    {
+      ...size,
+      fonts: [
+        {
+          name: "Cormorant",
+          data: cormorant,
+          weight: 400,
+          style: "italic",
+        },
+      ],
+    },
   );
 }
