@@ -1,4 +1,6 @@
 import { ImageResponse } from "next/og";
+import { readFile } from "node:fs/promises";
+import { join } from "node:path";
 
 // Open Graph share image. This is what Messenger / iMessage / WhatsApp /
 // Slack / Twitter render when someone pastes the URL. 1200×630 is the
@@ -13,7 +15,17 @@ export const alt = "Now — From the loop, back to here.";
 export const size = { width: 1200, height: 630 };
 export const contentType = "image/png";
 
-export default function OpenGraphImage() {
+async function loadCormorantItalic() {
+  // Bundled TTF, license at app/fonts/OFL.txt. Loaded once per cold start;
+  // Vercel caches the resulting PNG at the edge for a year, so this read
+  // is effectively one-time per deploy.
+  const path = join(process.cwd(), "app", "fonts", "CormorantGaramond-Italic.ttf");
+  return readFile(path);
+}
+
+export default async function OpenGraphImage() {
+  const cormorant = await loadCormorantItalic();
+
   return new ImageResponse(
     (
       <div
@@ -25,7 +37,7 @@ export default function OpenGraphImage() {
           flexDirection: "column",
           alignItems: "center",
           justifyContent: "center",
-          fontFamily: "Georgia, serif",
+          fontFamily: "Cormorant",
           padding: 80,
           position: "relative",
         }}
@@ -59,12 +71,23 @@ export default function OpenGraphImage() {
             bottom: 48,
             fontSize: 22,
             color: "#6B6358",
+            fontFamily: "Georgia, serif",
           }}
         >
           presencetherapy.ca
         </div>
       </div>
     ),
-    size,
+    {
+      ...size,
+      fonts: [
+        {
+          name: "Cormorant",
+          data: cormorant,
+          weight: 400,
+          style: "italic",
+        },
+      ],
+    },
   );
 }
