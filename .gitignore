@@ -42,8 +42,3 @@ yarn-error.log*
 .vscode/
 *.swp
 *.swo
-
-# Generated PWA icons — regenerate via scripts/generate_placeholder_icons.py
-# (see README) or replace with real assets.
-public/icon-192.png
-public/icon-512.png
