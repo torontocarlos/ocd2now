@@ -22,8 +22,8 @@ export function EyesAround({ userType }: InvitationProps) {
     <AnimatePresence mode="wait">
       {phase === "prompt" ? (
         <FadeLine key="prompt">
-          Let your eyes move around the room. Don&rsquo;t look for anything.
-          Just see what they land on.
+          The eyes move around the room on their own. They aren&rsquo;t
+          looking for anything. They just see what they land on.
         </FadeLine>
       ) : (
         <FinalText key="final">{finalText}</FinalText>

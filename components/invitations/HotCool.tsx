@@ -22,8 +22,8 @@ export function HotCool({ userType }: InvitationProps) {
     <AnimatePresence mode="wait">
       {phase === "prompt" ? (
         <FadeLine key="prompt">
-          Find one place on your body that feels warmer than the rest. And one
-          that feels cooler.
+          Some place on your body feels warmer than the rest. Some place feels
+          cooler.
         </FadeLine>
       ) : (
         <FinalText key="final">{finalText}</FinalText>

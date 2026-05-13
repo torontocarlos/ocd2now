@@ -5,6 +5,8 @@ import { useRouter } from "next/navigation";
 import { motion, AnimatePresence } from "framer-motion";
 import { getInvitation } from "@/components/invitations";
 import { StillText } from "@/components/fragments/StillText";
+import { Silence } from "@/components/fragments/Silence";
+import { RedirectOut } from "@/components/fragments/RedirectOut";
 import { getFragment, type Fragment } from "@/lib/fragments";
 import { endSession } from "@/lib/actions/endSession";
 import type { UserType } from "@/lib/types/database";
@@ -29,15 +31,29 @@ type Props = {
 
 export function SessionPlayer({ sessionId, fragmentId, userType }: Props) {
   const router = useRouter();
-  const [phase, setPhase] = useState<Phase>("arrival");
+  const fragment = getFragment(fragmentId);
+  const fragmentMs = fragment?.durationMs ?? 60_000;
+  const isRedirectOut = fragment?.kind === "redirect-out";
+
+  // Redirect-out fragments skip the arrival and return phases — the
+  // line *is* the session. Start directly in the "fragment" phase and
+  // close to /end when the line's time is up.
+  const [phase, setPhase] = useState<Phase>(
+    isRedirectOut ? "fragment" : "arrival",
+  );
   const [showSecondReturnLine, setShowSecondReturnLine] = useState(false);
   const [skipVisible, setSkipVisible] = useState(false);
 
-  const fragment = getFragment(fragmentId);
-  const fragmentMs = fragment?.durationMs ?? 60_000;
-
   // Phase transitions on a clock.
   useEffect(() => {
+    if (!fragment) return;
+
+    if (isRedirectOut) {
+      // No arrival, no return. Single fragment, then close.
+      const t = setTimeout(() => closeOnClock(), fragmentMs);
+      return () => clearTimeout(t);
+    }
+
     const t1 = setTimeout(() => setPhase("fragment"), ARRIVAL_MS);
     const t2 = setTimeout(() => setPhase("return"), ARRIVAL_MS + fragmentMs);
     const totalMs = ARRIVAL_MS + fragmentMs + RETURN_MS;
@@ -48,7 +64,7 @@ export function SessionPlayer({ sessionId, fragmentId, userType }: Props) {
       clearTimeout(t3);
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [fragmentMs]);
+  }, [fragmentMs, isRedirectOut]);
 
   // Skip becomes available after a delay measured from session start.
   useEffect(() => {
@@ -142,7 +158,7 @@ export function SessionPlayer({ sessionId, fragmentId, userType }: Props) {
         </AnimatePresence>
       </div>
 
-      {skipVisible && phase !== "return" ? (
+      {skipVisible && phase !== "return" && !isRedirectOut ? (
         <button
           type="button"
           onClick={skip}
@@ -165,6 +181,12 @@ function FragmentRenderer({
 }) {
   if (fragment.kind === "still-text") {
     return <StillText fragment={fragment} userType={userType} />;
+  }
+  if (fragment.kind === "silence") {
+    return <Silence />;
+  }
+  if (fragment.kind === "redirect-out") {
+    return <RedirectOut fragment={fragment} userType={userType} />;
   }
 
   // Invitation fragments still render via the existing component registry.
