@@ -19,7 +19,7 @@ const sans = Inter_Tight({
 });
 
 export const metadata: Metadata = {
-  metadataBase: new URL("https://ocd2now.vercel.app"),
+  metadataBase: new URL("https://ocd2now.inwardexpedition.ca"),
   title: "OCD2Now",
   description: "From the loop, back to here.",
   manifest: "/manifest.json",
