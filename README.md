@@ -156,19 +156,23 @@ If magic-link emails hit Supabase's ~30/hr rate limit in production,
 configure custom SMTP via Resend or SendGrid (Authentication → Email
 Templates → SMTP Settings) before disabling magic link.
 
-### 4. Generate (or replace) the PWA icons
+### 4. (Optional) Regenerate the PWA icons
 
-The repo doesn't ship binary PNGs. Run the generator once after cloning to
-produce solid-paper-color placeholders:
+`public/icon.svg` is the source of truth for the brand mark. Browser
+favicons and the PWA manifest reference it directly. The PNG fallbacks
+in `public/icon-192.png` and `public/icon-512.png` are committed and
+should be regenerated from the SVG whenever it changes:
 
 ```sh
-python3 scripts/generate_placeholder_icons.py
+npm run icons
 ```
 
-This writes `public/icon-192.png` and `public/icon-512.png`. They're
-gitignored — replace them with real assets before the public launch
-(they're what users see on their home screens after PWA install). Keep them
-quiet: no glyphs that scream "wellness app."
+This rasterizes `public/icon.svg` into both PNG sizes via `sharp`. Run
+it once locally after editing the SVG; the output is byte-stable.
+
+The Open Graph share image (`/opengraph-image`) and apple-touch icon
+(`/apple-icon`) are generated dynamically by Next at request time and
+cached at the edge — no manual step needed.
 
 ## Project layout
 
